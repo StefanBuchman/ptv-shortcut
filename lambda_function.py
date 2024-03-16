@@ -78,7 +78,7 @@ def getClosestStop(lat, lon):
     log = os.environ['log']
 
     if log == "high":
-        print('Initial distance from stop is {0}'.format(closestStopDistance))
+        print('Initial distance from McKinnon is {0}'.format(round(closestStopDistance, 2)))
 
     for _stop in stop:
         stopDict = stop[_stop]
@@ -86,6 +86,9 @@ def getClosestStop(lat, lon):
         if stopDistance < closestStopDistance:
             closestStop = _stop
             closestStopDistance = stopDistance
+            
+        if log == "high":
+            print('{0} is {1} kilometres away'.format(_stop, round(stopDistance, 2)))
 
     if log == "high":
         print('The closest stop is {0}'.format(closestStop['name']))
