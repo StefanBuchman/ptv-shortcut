@@ -9,36 +9,9 @@ from datetime import datetime
 from dateutil import tz
 from dateutil import parser
 
-stop = {
-    'McKinnon' : {
-        'name': 'McKinnon',
-        'id' : 1119,
-        'latitude' : -37.910305,
-        'longitude' : 145.0383,
-        'direction' : 1,
-        'route': 6
-    },
-    'Flinders' : {
-        'name': 'Flinders',
-        'id' : 1071,
-        'latitude' : -37.81831,
-        'longitude' : 144.966965,
-        'direction' : 5,
-        'route': 6
-    },
-    'Elsternwick' : {
-        'name': 'Elsternwick',
-        'id' : 1061,
-        'latitude' : -37.88475,
-        'longitude' : 145.0009,
-        'direction' : 1,
-        'route': 12
-    }
-}
-
-routeType = {
-    'train': 0
-}
+# Load stops data from stops.json
+with open('stops.json') as f:
+    stops = json.load(f)
 
 def getURL(request):
     devId = os.environ['id']
@@ -72,7 +45,7 @@ def getClosestStop(lat, lon):
     myLat = float(lat)
     myLon = float(lon)
 
-    closestStop = stop['McKinnon']
+    closestStop = stops['McKinnon']
     closestStopDistance = hs.haversine((myLat, myLon), (closestStop['latitude'], closestStop['longitude']))
 
     log = os.environ['log']
@@ -80,15 +53,15 @@ def getClosestStop(lat, lon):
     if log == "high":
         print('Initial distance from McKinnon is {0}'.format(round(closestStopDistance, 2)))
 
-    for _stop in stop:
-        stopDict = stop[_stop]
+    for stop in stops:
+        stopDict = stop[stop]
         stopDistance = hs.haversine((myLat, myLon), (stopDict['latitude'], stopDict['longitude']))
         if stopDistance < closestStopDistance:
-            closestStop = _stop
+            closestStop = stop
             closestStopDistance = stopDistance
             
         if log == "high":
-            print('{0} is {1} kilometres away'.format(_stop, round(stopDistance, 2)))
+            print('{0} is {1} kilometres away'.format(stop, round(stopDistance, 2)))
 
     if log == "high":
         print('The closest stop is {0}'.format(closestStop['name']))
@@ -109,7 +82,7 @@ def lambda_handler(event, context):
     
     ptvRequest = '/v3/departures/route_type/{routeType}/stop/{stop}'\
         '/route/{route}?direction_id={direction}&max_results=1&'\
-        'include_cancelled=false'.format(routeType = routeType['train'], stop = closestStop['id'], 
+        'include_cancelled=false'.format(routeType = closestStop['type'], stop = closestStop['id'], 
         route = closestStop['route'], direction = closestStop['direction'])
     
     ptvURL = getURL(ptvRequest)

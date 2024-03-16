@@ -1,0 +1,29 @@
+{
+    "McKinnon" : {
+        "name": "McKinnon",
+        "id" : 1119,
+        "latitude" : -37.910305,
+        "longitude" : 145.0383,
+        "direction" : 1,
+        "route" : 6,
+        "type" : 0
+    },
+    "Flinders" : {
+        "name": "Flinders",
+        "id" : 1071,
+        "latitude" : -37.81831,
+        "longitude" : 144.966965,
+        "direction" : 5,
+        "route": 6,
+        "type" : 0
+    },
+    "Elsternwick" : {
+        "name": "Elsternwick",
+        "id" : 1061,
+        "latitude" : -37.88475,
+        "longitude" : 145.0009,
+        "direction" : 1,
+        "route" : 12,
+        "type" : 0
+    }
+}
