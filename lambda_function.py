@@ -54,7 +54,7 @@ def getClosestStop(lat, lon):
         print('Initial distance from McKinnon is {0}'.format(round(closestStopDistance, 2)))
 
     for stop in stops:
-        stopDict = stop[stop]
+        stopDict = stops[stop]
         stopDistance = hs.haversine((myLat, myLon), (stopDict['latitude'], stopDict['longitude']))
         if stopDistance < closestStopDistance:
             closestStop = stop
