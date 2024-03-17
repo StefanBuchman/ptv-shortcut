@@ -57,7 +57,7 @@ def getClosestStop(lat, lon):
         stopDict = stops[stop]
         stopDistance = hs.haversine((myLat, myLon), (stopDict['latitude'], stopDict['longitude']))
         if stopDistance < closestStopDistance:
-            closestStop = stop
+            closestStop = stopDict
             closestStopDistance = stopDistance
             
         if log == "high":
