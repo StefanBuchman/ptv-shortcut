@@ -66,7 +66,7 @@ def getClosestStop(lat, lon):
     if log == "high":
         print('The closest stop is {0}'.format(closestStop['name']))
 
-    return closestStop
+    return closestStop, closestStopDistance
 
 def lambda_handler(event, context):
     
@@ -78,10 +78,18 @@ def lambda_handler(event, context):
     myLat = event['headers']['location-lat']
     myLong = event['headers']['location-long']
 
-    closestStop = getClosestStop(myLat, myLong)
+    closestStop, distance = getClosestStop(myLat, myLong)
+    
+    # Check if user is too far from any station
+    if distance > 100:
+        return {
+            'statusCode': 200,
+            'body': 'You don\'t seem to be close enough to any station. The closest station is {0} which is {1} km away.'\
+                .format(closestStop['name'], round(distance, 1))
+        }
     
     ptvRequest = '/v3/departures/route_type/{routeType}/stop/{stop}'\
-        '/route/{route}?direction_id={direction}&max_results=1&'\
+        '/route/{route}?direction_id={direction}&max_results=2&'\
         'include_cancelled=false'.format(routeType = closestStop['type'], stop = closestStop['id'], 
         route = closestStop['route'], direction = closestStop['direction'])
     
@@ -92,6 +100,14 @@ def lambda_handler(event, context):
         print(ptvURL)
         print(ptvData)
     
+    # Check if API call failed or no departures available
+    if not ptvData or 'departures' not in ptvData or len(ptvData['departures']) == 0:
+        return {
+            'statusCode': 200,
+            'body': 'Sorry, no departure information is currently available for {0} station.'.format(closestStop['name'])
+        }
+    
+    # Process first train
     nextDepartureUTC = ptvData['departures'][0]['estimated_departure_utc']
     nextDeparture = parser.parse(nextDepartureUTC)
     
@@ -106,11 +122,32 @@ def lambda_handler(event, context):
     seconds = deltaTime.total_seconds()
     mins = round(seconds / 60)
     
-    #message = 'The next train is departing at {0} {1} {2} in {3} minutes'.format(
-    #    nextDepartureMEL.strftime("%-I"), nextDepartureMEL.strftime("%M"), nextDepartureMEL.strftime("%p"), mins)
+    # Get platform info, handle missing platform numbers
+    platform = ptvData['departures'][0]['platform_number']
+    platform_text = f"from platform {platform}" if platform else ""
+    
+    # Handle case where train has already departed
+    if mins < 0:
+        message = 'The next {0} train departed {1} minutes ago at {2} {3}'\
+            .format(closestStop['name'], abs(mins), nextDepartureMEL.strftime("%-I:%M %p"), platform_text)
+    else:
+        message = 'The next {0} train is departing at {1} in {2} minutes {3}'\
+            .format(closestStop['name'], nextDepartureMEL.strftime("%-I:%M %p"), mins, platform_text)
+    
+    # If next train is arriving in 0-2 minutes and there's a second train, announce it too
+    if 0 <= mins <= 2 and len(ptvData['departures']) > 1:
+        secondDepartureUTC = ptvData['departures'][1]['estimated_departure_utc']
+        secondDeparture = parser.parse(secondDepartureUTC)
+        secondDepartureMEL = secondDeparture.astimezone(to_zone)
         
-    message = 'The next {0} train is departing at {1} in {2} minutes from platform {3}'\
-        .format(closestStop['name'], nextDepartureMEL.strftime("%-I:%M %p"), mins, ptvData['departures'][0]['platform_number'])
+        secondDeltaTime = secondDepartureMEL - dtNow
+        secondMins = round(secondDeltaTime.total_seconds() / 60)
+        
+        secondPlatform = ptvData['departures'][1]['platform_number']
+        secondPlatformText = f"from platform {secondPlatform}" if secondPlatform else ""
+        
+        message += '. The following train departs at {0} in {1} minutes {2}'\
+            .format(secondDepartureMEL.strftime("%-I:%M %p"), secondMins, secondPlatformText)
     
     return {
         'statusCode': 200,
